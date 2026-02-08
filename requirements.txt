@@ -1,0 +1,6 @@
+flask
+flask-smorest
+flask_jwt_extended
+cryptography
+sqlalchemy
+pymysql
