@@ -6,6 +6,7 @@ from routes.tasks import blp as tasks_blp
 from routes.auth import blp as auth_blp
 from routes.users import blp as users_blp
 from routes.department import blp as dept_blp
+from routes.projects import blp as project_blp
 
 def create_app():
     app=Flask(__name__)
@@ -39,6 +40,7 @@ def create_app():
     api.register_blueprint(auth_blp)
     api.register_blueprint(users_blp)
     api.register_blueprint(dept_blp)
+    api.register_blueprint(project_blp)
     return app
 
 app=create_app()
