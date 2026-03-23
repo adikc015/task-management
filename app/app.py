@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from flask_smorest import Api, Blueprint
 from flask_jwt_extended import JWTManager
 
@@ -10,6 +10,10 @@ from routes.projects import blp as project_blp
 
 def create_app():
     app=Flask(__name__)
+
+    @app.get("/")
+    def home():
+        return render_template("index.html")
 
     app.config["API_TITLE"] = "Task Management API"
     app.config["API_VERSION"] = "v1"

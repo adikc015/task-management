@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-MY_SQL = "mysql+pymysql://root:Ghy%401234@localhost:3306"
+MY_SQL = "mysql+pymysql://root:Adi12345@localhost:3306"
 
 engine=create_engine(MY_SQL, echo=True)
 
@@ -19,7 +19,7 @@ except Exception as e:
     
     
 if db_status==True:
-    DATABASE_URL = f"mysql+pymysql://root:Ghy%401234@localhost:3306/{Database_name}"
+    DATABASE_URL = f"mysql+pymysql://root:Adi12345@localhost:3306/{Database_name}"
     engine=create_engine(DATABASE_URL, echo=True)
     SessionLocal=sessionmaker(bind=engine)
     session=SessionLocal()

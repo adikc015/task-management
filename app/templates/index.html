@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Task Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div>
+        <p class="eyebrow">Task Management</p>
+        <h1>Control Panel</h1>
+      </div>
+      <nav class="side-nav">
+        <button class="nav-btn active" data-view="authentication" type="button">Authentication</button>
+        <button class="nav-btn" data-view="tasks" type="button">Tasks</button>
+        <button class="nav-btn" data-view="users" type="button">Users</button>
+        <button class="nav-btn" data-view="departments" type="button">Departments</button>
+        <button class="nav-btn" data-view="projects" type="button">Projects</button>
+      </nav>
+      <div class="sidebar-actions">
+        <a class="btn btn-outline" href="/swagger-ui" target="_blank" rel="noreferrer">Open Swagger</a>
+        <button id="logoutBtn" class="btn btn-ghost" type="button">Logout</button>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <h2 id="viewTitle">Authentication</h2>
+        <div id="authBanner" class="auth-banner">Not authenticated</div>
+      </header>
+
+      <section id="view-authentication" class="panel view-panel active">
+        <h3>Login</h3>
+        <form id="loginForm" class="grid-form">
+          <label>
+            Email
+            <input type="email" name="email" placeholder="you@example.com" required />
+          </label>
+          <label>
+            Password
+            <input type="password" name="password" placeholder="********" required />
+          </label>
+          <button class="btn btn-solid" type="submit">Sign In</button>
+        </form>
+      </section>
+
+      <section id="view-tasks" class="panel view-panel">
+        <div class="panel-head">
+          <h3>Tasks</h3>
+          <button id="refreshTasksBtn" class="btn btn-small" type="button">Refresh</button>
+        </div>
+
+        <div class="panel-grid">
+          <form id="taskForm" class="grid-form card-form">
+            <h4>Create Task</h4>
+            <label>
+              Title
+              <input type="text" name="title" required />
+            </label>
+            <label>
+              Project ID
+              <input type="number" name="project_id" min="1" required />
+            </label>
+            <label>
+              Status
+              <select name="status">
+                <option value="pending">pending</option>
+                <option value="in_progress">in_progress</option>
+                <option value="completed">completed</option>
+              </select>
+            </label>
+            <label>
+              Priority
+              <select name="priority">
+                <option value="">none</option>
+                <option value="low">low</option>
+                <option value="medium">medium</option>
+                <option value="high">high</option>
+              </select>
+            </label>
+            <label>
+              Due Date
+              <input type="date" name="due_date" />
+            </label>
+            <label>
+              Description
+              <textarea name="description" rows="2" placeholder="Optional details"></textarea>
+            </label>
+            <button class="btn btn-solid" type="submit">Create</button>
+          </form>
+
+          <form id="taskUpdateForm" class="grid-form card-form">
+            <h4>Update Task</h4>
+            <label>
+              Task ID
+              <input type="number" name="task_id" min="1" required />
+            </label>
+            <label>
+              Title
+              <input type="text" name="title" />
+            </label>
+            <label>
+              Status
+              <select name="status">
+                <option value="">no change</option>
+                <option value="pending">pending</option>
+                <option value="in_progress">in_progress</option>
+                <option value="completed">completed</option>
+              </select>
+            </label>
+            <label>
+              Priority
+              <select name="priority">
+                <option value="">no change</option>
+                <option value="low">low</option>
+                <option value="medium">medium</option>
+                <option value="high">high</option>
+              </select>
+            </label>
+            <label>
+              Due Date
+              <input type="date" name="due_date" />
+            </label>
+            <label>
+              Description
+              <textarea name="description" rows="2" placeholder="Leave blank for no change"></textarea>
+            </label>
+            <button class="btn btn-small" type="submit">Update</button>
+          </form>
+
+          <form id="taskDeleteForm" class="grid-form card-form">
+            <h4>Delete Task</h4>
+            <label>
+              Task ID
+              <input type="number" name="task_id" min="1" required />
+            </label>
+            <button class="btn btn-danger" type="submit">Delete</button>
+          </form>
+
+          <form id="taskAssignForm" class="grid-form card-form">
+            <h4>Assign Users</h4>
+            <label>
+              Task ID
+              <input type="number" name="task_id" min="1" required />
+            </label>
+            <label>
+              User IDs
+              <input type="text" name="user_ids" placeholder="1,2" required />
+            </label>
+            <button class="btn btn-small" type="submit">Assign</button>
+          </form>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Due</th>
+                <th>Project</th>
+              </tr>
+            </thead>
+            <tbody id="tasksTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="view-users" class="panel view-panel">
+        <div class="panel-head">
+          <h3>Users</h3>
+          <button id="refreshUsersBtn" class="btn btn-small" type="button">Refresh</button>
+        </div>
+        <form id="userForm" class="grid-form two-col">
+          <label>
+            Name
+            <input type="text" name="name" required />
+          </label>
+          <label>
+            Email
+            <input type="email" name="email" required />
+          </label>
+          <label>
+            Password
+            <input type="password" name="password" required />
+          </label>
+          <label>
+            Role
+            <select name="role" required>
+              <option value="member">member</option>
+              <option value="manager">manager</option>
+              <option value="admin">admin</option>
+            </select>
+          </label>
+          <label>
+            Department ID
+            <input type="number" name="department_id" min="1" required />
+          </label>
+          <button class="btn btn-solid full" type="submit">Create User</button>
+        </form>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Department</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="view-departments" class="panel view-panel">
+        <div class="panel-head">
+          <h3>Departments</h3>
+          <button id="refreshDepartmentsBtn" class="btn btn-small" type="button">Refresh</button>
+        </div>
+        <form id="departmentForm" class="grid-form">
+          <label>
+            Department Name
+            <input type="text" name="name" required />
+          </label>
+          <button class="btn btn-solid" type="submit">Create Department</button>
+        </form>
+        <ul id="departmentsList" class="chip-list"></ul>
+      </section>
+
+      <section id="view-projects" class="panel view-panel">
+        <div class="panel-head">
+          <h3>Projects</h3>
+          <button id="refreshProjectsBtn" class="btn btn-small" type="button">Refresh</button>
+        </div>
+        <form id="projectForm" class="grid-form two-col">
+          <label>
+            Project Name
+            <input type="text" name="name" required />
+          </label>
+          <label>
+            Department ID
+            <input type="number" name="department_id" min="1" required />
+          </label>
+          <button class="btn btn-solid full" type="submit">Create Project</button>
+        </form>
+        <ul id="projectsList" class="chip-list"></ul>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</body>
+</html>
