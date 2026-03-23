@@ -1,11 +1,12 @@
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+from config import settings
 
-MY_SQL = "mysql+pymysql://root:Adi12345@localhost:3306"
+MY_SQL = settings.DB_SERVER_URI
 
-engine=create_engine(MY_SQL, echo=True)
+engine = create_engine(MY_SQL, echo=settings.DB_ENGINE_ECHO)
 
-Database_name="task_management"
+Database_name = settings.DB_NAME
 
 db_status=False
 
@@ -19,10 +20,10 @@ except Exception as e:
     
     
 if db_status==True:
-    DATABASE_URL = f"mysql+pymysql://root:Adi12345@localhost:3306/{Database_name}"
-    engine=create_engine(DATABASE_URL, echo=True)
-    SessionLocal=sessionmaker(bind=engine)
-    session=SessionLocal()
+    DATABASE_URL = settings.DATABASE_URL or f"{MY_SQL}/{Database_name}"
+    engine = create_engine(DATABASE_URL, echo=settings.DB_ENGINE_ECHO)
+    SessionLocal = sessionmaker(bind=engine)
+    session = SessionLocal()
     print("Database created successfully, ready to work")
     session.close()
 else:

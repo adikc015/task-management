@@ -5,6 +5,7 @@ const state = {
   token: localStorage.getItem(TOKEN_KEY) || "",
   toastTimer: null,
   activeView: "authentication",
+  editingTaskId: null,
 };
 
 const viewTitleMap = {
@@ -160,24 +161,185 @@ function addCell(row, value) {
   row.appendChild(cell);
 }
 
+function createActionButton(label, className, action, taskId) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `btn ${className}`;
+  button.dataset.action = action;
+  button.dataset.taskId = String(taskId);
+  button.textContent = label;
+  return button;
+}
+
+function createEditableCell(name, value, type = "text") {
+  const cell = document.createElement("td");
+  const input = document.createElement("input");
+  input.type = type;
+  input.name = name;
+  input.value = value == null || value === "-" ? "" : String(value);
+  cell.appendChild(input);
+  return cell;
+}
+
+function createSelectCell(name, value, options) {
+  const cell = document.createElement("td");
+  const select = document.createElement("select");
+  select.name = name;
+
+  options.forEach((optionValue) => {
+    const option = document.createElement("option");
+    option.value = optionValue;
+    option.textContent = optionValue || "none";
+    if ((value || "") === optionValue) {
+      option.selected = true;
+    }
+    select.appendChild(option);
+  });
+
+  cell.appendChild(select);
+  return cell;
+}
+
+function createTaskRow(task) {
+  const row = document.createElement("tr");
+  row.dataset.taskId = String(task.id);
+
+  if (state.editingTaskId === task.id) {
+    addCell(row, task.id);
+    row.appendChild(createEditableCell("title", task.title));
+    row.appendChild(
+      createSelectCell("status", task.status || "", ["pending", "in_progress", "completed"]),
+    );
+    row.appendChild(
+      createSelectCell("priority", task.priority || "", ["", "low", "medium", "high"]),
+    );
+    row.appendChild(createEditableCell("due_date", task.due_date || "", "date"));
+    addCell(row, task.project_id);
+
+    const actionCell = document.createElement("td");
+    actionCell.className = "task-actions";
+    actionCell.appendChild(createActionButton("Save", "btn-small", "save", task.id));
+    actionCell.appendChild(createActionButton("Cancel", "btn-ghost", "cancel", task.id));
+    row.appendChild(actionCell);
+    return row;
+  }
+
+  addCell(row, task.id);
+  addCell(row, task.title);
+  addCell(row, task.status);
+  addCell(row, task.priority);
+  addCell(row, task.due_date);
+  addCell(row, task.project_id);
+
+  const actionCell = document.createElement("td");
+  actionCell.className = "task-actions";
+  actionCell.appendChild(createActionButton("Update", "btn-small", "edit", task.id));
+  actionCell.appendChild(createActionButton("Delete", "btn-danger", "delete", task.id));
+  row.appendChild(actionCell);
+
+  return row;
+}
+
 async function refreshTasks() {
   clearTableBody("tasksTableBody");
   const tbody = document.getElementById("tasksTableBody");
 
   try {
     const tasks = await apiRequest("/tasks/");
+    if (state.editingTaskId && !tasks.some((task) => task.id === state.editingTaskId)) {
+      state.editingTaskId = null;
+    }
+
     tasks.forEach((task) => {
-      const row = document.createElement("tr");
-      addCell(row, task.id);
-      addCell(row, task.title);
-      addCell(row, task.status);
-      addCell(row, task.priority);
-      addCell(row, task.due_date);
-      addCell(row, task.project_id);
+      const row = createTaskRow(task);
       tbody.appendChild(row);
     });
   } catch (error) {
     showToast(`Tasks: ${error.message}`, "error");
+  }
+}
+
+async function handleTaskTableAction(event) {
+  const actionButton = event.target.closest("button[data-action]");
+  if (!actionButton) {
+    return;
+  }
+
+  const taskId = Number(actionButton.dataset.taskId);
+  const action = actionButton.dataset.action;
+
+  if (!Number.isInteger(taskId) || taskId <= 0) {
+    showToast("Invalid task selected", "error");
+    return;
+  }
+
+  if (action === "edit") {
+    state.editingTaskId = taskId;
+    await refreshTasks();
+    return;
+  }
+
+  if (action === "cancel") {
+    state.editingTaskId = null;
+    await refreshTasks();
+    return;
+  }
+
+  if (action === "delete") {
+    const confirmed = window.confirm(`Delete task ${taskId}?`);
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await apiRequest(`/tasks/${taskId}`, { method: "DELETE" });
+      if (state.editingTaskId === taskId) {
+        state.editingTaskId = null;
+      }
+      showToast("Task deleted", "success");
+      await refreshTasks();
+    } catch (error) {
+      showToast(`Delete task failed: ${error.message}`, "error");
+    }
+    return;
+  }
+
+  if (action !== "save") {
+    return;
+  }
+
+  const row = actionButton.closest("tr");
+  if (!row) {
+    return;
+  }
+
+  const title = row.querySelector('input[name="title"]')?.value.trim() || "";
+  const status = row.querySelector('select[name="status"]')?.value || "";
+  const priority = row.querySelector('select[name="priority"]')?.value || "";
+  const dueDate = row.querySelector('input[name="due_date"]')?.value || "";
+
+  const updatePayload = {
+    title,
+    status,
+    priority: priority || null,
+    due_date: dueDate || null,
+  };
+
+  if (!title || !status) {
+    showToast("Title and status are required", "error");
+    return;
+  }
+
+  try {
+    await apiRequest(`/tasks/${taskId}`, {
+      method: "PUT",
+      body: JSON.stringify(updatePayload),
+    });
+    state.editingTaskId = null;
+    showToast("Task updated", "success");
+    await refreshTasks();
+  } catch (error) {
+    showToast(`Update task failed: ${error.message}`, "error");
   }
 }
 
@@ -290,6 +452,7 @@ function setupAuthHandlers() {
 
 function setupTaskHandlers() {
   document.getElementById("refreshTasksBtn").addEventListener("click", refreshTasks);
+  document.getElementById("tasksTableBody").addEventListener("click", handleTaskTableAction);
 
   document.getElementById("taskForm").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -311,66 +474,6 @@ function setupTaskHandlers() {
       await refreshTasks();
     } catch (error) {
       showToast(`Create task failed: ${error.message}`, "error");
-    }
-  });
-
-  document.getElementById("taskUpdateForm").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const payload = formToObject(form);
-    const taskId = Number(payload.task_id);
-
-    delete payload.task_id;
-
-    const updatePayload = {};
-    if (payload.title) {
-      updatePayload.title = payload.title;
-    }
-    if (payload.status) {
-      updatePayload.status = payload.status;
-    }
-    if (payload.priority) {
-      updatePayload.priority = payload.priority;
-    }
-    if (payload.due_date) {
-      updatePayload.due_date = payload.due_date;
-    }
-    if (payload.description) {
-      updatePayload.description = payload.description;
-    }
-
-    if (!Object.keys(updatePayload).length) {
-      showToast("Provide at least one field to update", "error");
-      return;
-    }
-
-    try {
-      await apiRequest(`/tasks/${taskId}`, {
-        method: "PUT",
-        body: JSON.stringify(updatePayload),
-      });
-      form.reset();
-      showToast("Task updated", "success");
-      await refreshTasks();
-    } catch (error) {
-      showToast(`Update task failed: ${error.message}`, "error");
-    }
-  });
-
-  document.getElementById("taskDeleteForm").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const payload = formToObject(form);
-
-    try {
-      await apiRequest(`/tasks/${Number(payload.task_id)}`, {
-        method: "DELETE",
-      });
-      form.reset();
-      showToast("Task deleted", "success");
-      await refreshTasks();
-    } catch (error) {
-      showToast(`Delete task failed: ${error.message}`, "error");
     }
   });
 

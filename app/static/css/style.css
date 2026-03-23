@@ -289,12 +289,29 @@ td {
   text-align: left;
   padding: 7px;
   font-size: 0.9rem;
+  vertical-align: middle;
 }
 
 th {
   color: var(--ink-muted);
   font-weight: 600;
   background: #f7fbf9;
+}
+
+.task-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.task-actions .btn {
+  padding: 6px 10px;
+}
+
+#tasksTableBody input,
+#tasksTableBody select {
+  min-width: 120px;
+  padding: 6px 8px;
 }
 
 .chip-list {

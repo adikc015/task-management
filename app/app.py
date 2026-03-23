@@ -1,6 +1,7 @@
 from flask import Flask, render_template
 from flask_smorest import Api, Blueprint
 from flask_jwt_extended import JWTManager
+from config import settings
 
 from routes.tasks import blp as tasks_blp
 from routes.auth import blp as auth_blp
@@ -15,19 +16,19 @@ def create_app():
     def home():
         return render_template("index.html")
 
-    app.config["API_TITLE"] = "Task Management API"
-    app.config["API_VERSION"] = "v1"
-    app.config["OPENAPI_VERSION"] = "3.0.3"
+    app.config["API_TITLE"] = settings.API_TITLE
+    app.config["API_VERSION"] = settings.API_VERSION
+    app.config["OPENAPI_VERSION"] = settings.OPENAPI_VERSION
 
-    app.config["OPENAPI_URL_PREFIX"] = "/"
-    app.config["OPENAPI_SWAGGER_UI_PATH"] = "/swagger-ui"
-    app.config["OPENAPI_SWAGGER_UI_URL"] = "https://cdn.jsdelivr.net/npm/swagger-ui-dist/"
+    app.config["OPENAPI_URL_PREFIX"] = settings.OPENAPI_URL_PREFIX
+    app.config["OPENAPI_SWAGGER_UI_PATH"] = settings.OPENAPI_SWAGGER_UI_PATH
+    app.config["OPENAPI_SWAGGER_UI_URL"] = settings.OPENAPI_SWAGGER_UI_URL
 
-    app.config["SQLACHEMY_DATABASE_URI"] = "mysql+pymysql://root:Ghy%401234@localhost:3036/task_manager"
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"]=False
+    app.config["SQLALCHEMY_DATABASE_URI"] = settings.APP_SQLALCHEMY_DATABASE_URI
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = settings.SQLALCHEMY_TRACK_MODIFICATIONS
     
-    app.config["SECRET_KEY"] = "abcd"
-    app.config["JWT_SECRET_KEY"] = "abcd"
+    app.config["SECRET_KEY"] = settings.SECRET_KEY
+    app.config["JWT_SECRET_KEY"] = settings.JWT_SECRET_KEY
     
     # db.init_app(app)
     
@@ -50,4 +51,4 @@ def create_app():
 app=create_app()
 
 if __name__=="__main__":
-    app.run(debug=True)
+    app.run(host=settings.APP_HOST, port=settings.APP_PORT, debug=settings.FLASK_DEBUG)
